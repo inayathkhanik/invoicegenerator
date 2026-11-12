@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IKTECSERVICES - Tax Invoice</title>
+<style>
+  :root { --navy:#14243b; --yellow:#f2d23c; --ink:#172033; --muted:#667085; --line:#d7dce3; --pale:#f3f5f8; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#edf0f4; color:var(--ink); font:14px Arial,Helvetica,sans-serif; }
+  .toolbar { max-width:1100px; margin:22px auto 12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; padding:0 16px; }
+  button, .upload-label { border:0; border-radius:7px; padding:10px 15px; font-weight:700; cursor:pointer; background:var(--navy); color:white; }
+  button.secondary { background:#e1e6ed; color:var(--navy); }
+  button.yellow { background:var(--yellow); color:#172033; }
+  .upload-label input { display:none; }
+  .hint { color:#5f6876; font-size:12px; margin-left:auto; }
+  .sheet { width:min(100% - 24px, 1000px); margin:0 auto 28px; background:white; padding:34px 42px; box-shadow:0 5px 28px #17203318; }
+  .header { display:grid; grid-template-columns:100px 1fr 130px; gap:18px; align-items:center; border-bottom:2px solid #b8bec8; padding-bottom:16px; }
+  .logo { width:100px; height:78px; object-fit:contain; border:1px dashed #c5cbd4; padding:5px; color:#778; font-size:11px; text-align:center; }
+  .company { text-align:center; }
+  .company h1 { margin:0 0 4px; font-size:24px; letter-spacing:.4px; color:var(--navy); }
+  .company .owner { font-weight:700; margin-bottom:4px; }
+  .company p { margin:3px 0; color:#303a49; font-size:12px; }
+  .invoice-title { text-align:right; font-size:23px; font-weight:800; letter-spacing:1px; color:var(--navy); }
+  .top-info { display:grid; grid-template-columns:1fr 250px; gap:20px; padding:18px 0 20px; }
+  .section-label { font-size:12px; font-weight:800; letter-spacing:.4px; margin-bottom:7px; color:var(--navy); }
+  .billto input, .meta input, .company-edit input { width:100%; border:0; border-bottom:1px solid transparent; padding:3px 2px; font:inherit; color:inherit; background:transparent; }
+  .billto input:focus, .meta input:focus, .company-edit input:focus { outline:0; border-bottom-color:#9aa8ba; background:#f8fafc; }
+  .billto .customer-name { font-weight:700; font-size:16px; }
+  .meta { display:grid; grid-template-columns:1fr 1fr; gap:7px 8px; align-content:start; }
+  .meta label { font-size:12px; font-weight:700; color:#455064; }
+  .meta input { text-align:right; font-weight:600; }
+  .table-wrap { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; min-width:690px; }
+  thead { background:var(--pale); }
+  th { color:var(--navy); text-align:left; font-size:11px; padding:11px 8px; text-transform:uppercase; }
+  td { border-bottom:1px solid #cbd0d8; padding:9px 8px; vertical-align:middle; }
+  th.num, td.num { text-align:right; }
+  td input { width:100%; min-width:40px; border:0; background:transparent; padding:4px 2px; font:inherit; color:inherit; }
+  td input:focus { outline:0; background:#f4f7fb; border-bottom:1px solid #98a8bd; }
+  .desc-main { font-weight:700; }
+  .desc-sub { font-size:11px; color:#667085; margin-top:3px; }
+  .desc-cell input:first-child { font-weight:700; }
+  .tax-cell { text-align:right; white-space:nowrap; }
+  .tax-cell input { text-align:right; width:55px; display:inline-block; }
+  .tax-rate { display:block; color:#667085; font-size:10px; }
+  .remove { color:#a32b2b; background:#fff0f0; padding:5px 8px; }
+  .add-row { margin-top:12px; }
+  .below { display:grid; grid-template-columns:1fr 300px; gap:22px; margin-top:16px; }
+  .words { font-size:12px; }
+  .words strong { display:block; margin-bottom:6px; color:var(--navy); }
+  #amountWords { line-height:1.5; }
+  .totals { width:100%; }
+  .totals div { display:flex; justify-content:space-between; padding:6px 4px; border-bottom:1px solid #e1e5eb; }
+  .totals .grand { background:#eef1f5; border-bottom:2px solid #9da8b8; font-size:16px; font-weight:800; color:var(--navy); }
+  .payment-sign { display:grid; grid-template-columns:1fr 1fr; gap:25px; margin-top:34px; }
+  .payment { font-size:12px; line-height:1.6; }
+  .payment strong { display:block; color:var(--navy); margin-bottom:4px; }
+  .signature { text-align:right; padding-top:4px; }
+  .signature .for { font-weight:800; color:var(--navy); margin-bottom:58px; }
+  .signature .line { border-top:1px solid #7b8491; width:190px; margin-left:auto; padding-top:7px; font-size:11px; }
+  .footer { border-top:1px solid #e0e4e9; margin-top:24px; padding-top:9px; text-align:center; font-size:10px; color:#9299a4; }
+  .editable-note { color:#7b8491; font-size:10px; margin-top:4px; }
+
+  .materials-panel { margin:4px 0 22px; padding:16px; border:1px solid #d7dce3; border-radius:9px; background:#fbfcfe; }
+  .materials-panel h2 { margin:0 0 5px; color:var(--navy); font-size:17px; }
+  .materials-panel .intro { color:var(--muted); font-size:12px; margin:0 0 13px; }
+  .material-controls { display:grid; grid-template-columns:1.1fr 1.5fr 1.4fr .65fr .9fr .7fr auto; gap:9px; align-items:end; }
+  .material-controls label { display:block; font-size:11px; font-weight:700; color:#455064; }
+  .material-controls select,.material-controls input { width:100%; margin-top:5px; min-width:0; padding:9px 7px; border:1px solid #cbd3df; border-radius:6px; background:white; color:#172033; font:13px Arial,sans-serif; }
+  .material-controls button { white-space:nowrap; padding:10px 12px; }
+  .material-note { margin-top:10px; font-size:11px; color:#667085; }
+  @media(max-width:850px) { .material-controls { grid-template-columns:repeat(2,minmax(0,1fr)); } .material-controls button { width:100%; } }
+  @media print { .materials-panel { display:none !important; } }
+
+  @media(max-width:700px) {
+    .sheet { padding:20px 14px; }
+    .header { grid-template-columns:70px 1fr 80px; gap:8px; }
+    .logo { width:70px; height:65px; }
+    .company h1 { font-size:16px; }
+    .company p { font-size:10px; }
+    .invoice-title { font-size:16px; }
+    .top-info { grid-template-columns:1fr; }
+    .meta { max-width:360px; }
+    .below { grid-template-columns:1fr; }
+    .payment-sign { grid-template-columns:1fr; }
+    .signature { text-align:left; }
+    .signature .line { margin-left:0; }
+  }
+  @media print {
+    @page { size:A4; margin:12mm; }
+    body { background:white; }
+    .toolbar, .add-row, .remove, .editable-note, .no-print { display:none !important; }
+    .sheet { width:100%; margin:0; padding:0; box-shadow:none; }
+    input { border:0 !important; background:transparent !important; color:#172033 !important; }
+    td { break-inside:avoid; }
+    .header { break-inside:avoid; }
+    .top-info, .below, .payment-sign { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button class="yellow" onclick="window.print()">Print / Save as PDF</button>
+  <button onclick="addItem()">+ Add item</button>
+  <label class="upload-label">Upload company logo <input type="file" accept="image/*" id="logoUpload" onchange="loadLogo(event)"></label>
+  <span class="hint">Edit any field, quantity, price or tax rate.</span>
+</div>
+
+<main class="sheet">
+  <header class="header">
+    <img id="logo" class="logo" alt="Company logo" src="" />
+    <div class="company">
+      <h1 contenteditable="true">IKTECSERVICES</h1>
+      <div class="owner" contenteditable="true">INAYATH KHAN</div>
+      <p contenteditable="true">nearby aksa masjid 2 cross market road Chikmagalur</p>
+      <p><span contenteditable="true">8310555481</span> &nbsp; | &nbsp; <span contenteditable="true">inayathkhan169@gmail.com</span></p>
+    </div>
+    <div class="invoice-title">TAX<br>INVOICE</div>
+  </header>
+
+  <section class="top-info">
+    <div class="billto">
+      <div class="section-label">BILL TO</div>
+      <input class="customer-name" value="" placeholder="Customer / Company Name" aria-label="Customer or company name">
+      <input value="" placeholder="Contact Person" aria-label="Contact person">
+      <input value="" placeholder="Billing Address" aria-label="Billing address">
+      <input value="" placeholder="Phone Number" aria-label="Customer phone">
+    </div>
+    <div class="meta">
+      <label>Invoice #</label><input id="invoiceNo" value="INV-001">
+      <label>Invoice Date</label><input id="invoiceDate" type="date">
+    </div>
+  </section>
+
+
+  <section class="materials-panel">
+    <h2>Quick Add Materials</h2>
+    <p class="intro">Choose a trade, material and specification. Enter your current rate, then add it directly to the invoice.</p>
+    <div class="material-controls">
+      <label>Trade
+        <select id="materialCategory">
+          <option value="plumbing">Plumbing</option>
+          <option value="electrical">Electrical</option>
+        </select>
+      </label>
+      <label>Material
+        <select id="materialName"></select>
+      </label>
+      <label>Size / Details
+        <select id="materialSpec"></select>
+      </label>
+      <label>Qty
+        <input id="materialQty" type="number" min="0" step="any" value="1">
+      </label>
+      <label>Unit price (₹)
+        <input id="materialPrice" type="number" min="0" step="0.01" value="0">
+      </label>
+      <label>Tax (%)
+        <input id="materialTax" type="number" min="0" max="100" step="0.01" value="18">
+      </label>
+      <button class="yellow" type="button" onclick="addSelectedMaterial()">Add to invoice</button>
+    </div>
+    <div class="material-note">Material prices are set to ₹0 by default because supplier rates vary. Enter your actual purchase or selling rate before adding. You can still edit every item in the invoice table.</div>
+  </section>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th style="width:34px">#</th><th>DESCRIPTION</th><th class="num">QTY</th>
+        <th class="num">PRICE</th><th class="num">TAXABLE<br>AMOUNT</th><th class="num">TAX</th><th class="num">TOTAL</th><th class="no-print"></th>
+      </tr></thead>
+      <tbody id="items"></tbody>
+    </table>
+  </div>
+  <div class="add-row"><button class="secondary" onclick="addItem()">+ Add another item</button></div>
+
+  <section class="below">
+    <div class="words">
+      <strong>AMOUNT IN WORDS:</strong>
+      <div id="amountWords">Six Thousand Four Hundred Eighty-three Rupees And Seventy Paisa Only</div>
+    </div>
+    <div class="totals">
+      <div><span>TAXABLE AMOUNT</span><strong id="subtotal">₹5,605.00</strong></div>
+      <div><span>TAX</span><strong id="taxTotal">₹878.70</strong></div>
+      <div class="grand"><span>GRAND TOTAL</span><strong id="grandTotal">₹6,483.70</strong></div>
+    </div>
+  </section>
+
+  <section class="payment-sign">
+    <div class="payment">
+      <strong>PAYMENT INSTRUCTIONS</strong>
+      <div contenteditable="true">Account Name: <br>Account Number: <br>IFSC Code: <br>Branch: </div>
+    </div>
+    <div class="signature">
+      <div class="for">For, IKTECSERVICES</div>
+      <div class="line">AUTHORIZED SIGNATURE</div>
+    </div>
+  </section>
+  <div class="footer" contenteditable="true">Thank you for your business.</div>
+</main>
+
+<script>
+const sampleItems = [];
+const money = n => "₹" + (Number(n)||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+function addItem(item={desc:"New item",detail:"",qty:1,price:0,tax:18}) {
+  const tbody=document.getElementById("items");
+  const tr=document.createElement("tr");
+  tr.innerHTML=`
+    <td class="num row-number"></td>
+    <td class="desc-cell">
+      <input class="desc-main" value="${escapeHtml(item.desc)}" aria-label="Description">
+      <input class="desc-sub" value="${escapeHtml(item.detail||"")}" placeholder="Additional details (optional)" aria-label="Item details">
+    </td>
+    <td class="num"><input type="number" min="0" step="any" class="qty" value="${item.qty}" aria-label="Quantity"></td>
+    <td class="num"><input type="number" min="0" step="0.01" class="price" value="${item.price}" aria-label="Unit price"></td>
+    <td class="num taxable">₹0.00</td>
+    <td class="tax-cell"><span class="tax-amount">₹0.00</span><span class="tax-rate"><input type="number" min="0" max="100" step="0.01" class="tax" value="${item.tax}" aria-label="Tax percentage">%</span></td>
+    <td class="num line-total">₹0.00</td>
+    <td class="no-print"><button class="remove" type="button" aria-label="Remove item">×</button></td>`;
+  tbody.appendChild(tr);
+  tr.querySelectorAll("input").forEach(el=>el.addEventListener("input",calculate));
+  tr.querySelector(".remove").addEventListener("click",()=>{tr.remove();calculate();});
+  calculate();
+}
+function calculate() {
+  let subtotal=0,taxTotal=0;
+  document.querySelectorAll("#items tr").forEach((tr,i)=>{
+    const qty=Math.max(0,Number(tr.querySelector(".qty").value)||0);
+    const price=Math.max(0,Number(tr.querySelector(".price").value)||0);
+    const rate=Math.max(0,Number(tr.querySelector(".tax").value)||0);
+    const base=qty*price, tax=base*rate/100, total=base+tax;
+    subtotal+=base; taxTotal+=tax;
+    tr.querySelector(".row-number").textContent=i+1;
+    tr.querySelector(".taxable").textContent=money(base);
+    tr.querySelector(".tax-amount").textContent=money(tax);
+    tr.querySelector(".line-total").textContent=money(total);
+  });
+  document.getElementById("subtotal").textContent=money(subtotal);
+  document.getElementById("taxTotal").textContent=money(taxTotal);
+  document.getElementById("grandTotal").textContent=money(subtotal+taxTotal);
+  document.getElementById("amountWords").textContent=numberToWords(Math.round((subtotal+taxTotal)*100)/100);
+}
+function numberToWords(value) {
+  const ones=["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
+  const tens=["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  function under1000(n) {
+    let out="";
+    if(n>=100){out+=ones[Math.floor(n/100)]+" Hundred";n%=100;if(n)out+=" ";}
+    if(n>=20){out+=tens[Math.floor(n/10)];if(n%10)out+="-"+ones[n%10];}
+    else if(n>0)out+=ones[n];
+    return out;
+  }
+  function integerWords(n) {
+    if(n===0)return "Zero";
+    const parts=[];
+    const units=[["Crore",10000000],["Lakh",100000],["Thousand",1000],["",1]];
+    for(const [label,size] of units){const q=Math.floor(n/size);if(q){parts.push(under1000(q)+(label?" "+label:""));n%=size;}}
+    return parts.join(" ");
+  }
+  const rupees=Math.floor(value), paise=Math.round((value-rupees)*100);
+  return integerWords(rupees)+" Rupees"+(paise?" And "+integerWords(paise)+" Paise":"")+" Only";
+}
+function resetInvoice() {
+  document.getElementById("items").innerHTML="";
+  calculate();
+}
+function loadLogo(event) {
+  const file=event.target.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{document.getElementById("logo").src=e.target.result;};
+  reader.readAsDataURL(file);
+}
+
+const materialCatalog = {
+  plumbing: [
+    {name:"CPVC Pipe", specs:["½ inch","¾ inch","1 inch","1¼ inch","1½ inch","2 inch"], unit:"feet"},
+    {name:"CPVC Elbow", specs:["½ inch","¾ inch","1 inch","1¼ inch","1½ inch","2 inch"], unit:"pcs"},
+    {name:"CPVC Tee", specs:["½ inch","¾ inch","1 inch","1¼ inch","1½ inch","2 inch"], unit:"pcs"},
+    {name:"CPVC Coupler / Socket", specs:["½ inch","¾ inch","1 inch","1¼ inch","1½ inch","2 inch"], unit:"pcs"},
+    {name:"CPVC Brass Elbow", specs:["½ inch","¾ inch","1 inch"], unit:"pcs"},
+    {name:"CPVC Brass Tee", specs:["½ inch","¾ inch","1 inch"], unit:"pcs"},
+    {name:"CPVC Union", specs:["½ inch","¾ inch","1 inch"], unit:"pcs"},
+    {name:"CPVC Solvent", specs:["Small tin","Medium tin","Large tin"], unit:"tin"},
+    {name:"PVC Pipe", specs:["½ inch","¾ inch","1 inch","1¼ inch","1½ inch","2 inch","3 inch","4 inch"], unit:"feet"},
+    {name:"PVC Elbow", specs:["½ inch","¾ inch","1 inch","1½ inch","2 inch","3 inch","4 inch"], unit:"pcs"},
+    {name:"SWR Pipe", specs:["75 mm","110 mm"], unit:"feet"},
+    {name:"SWR Bend", specs:["75 mm","110 mm"], unit:"pcs"},
+    {name:"GI Pipe", specs:["½ inch","¾ inch","1 inch","1¼ inch","1½ inch","2 inch"], unit:"feet"},
+    {name:"Long Body Tap", specs:["½ inch","¾ inch","Standard"], unit:"pcs"},
+    {name:"Bib Cock", specs:["½ inch","¾ inch","Standard"], unit:"pcs"},
+    {name:"Angle Valve", specs:["½ inch","¾ inch"], unit:"pcs"},
+    {name:"Health Faucet Set", specs:["Standard","Premium"], unit:"set"},
+    {name:"Pillar Cock", specs:["Standard","Long body"], unit:"pcs"},
+    {name:"Shower", specs:["Hand shower","Overhead shower","Shower set"], unit:"pcs"},
+    {name:"Floor Trap", specs:["2 inch","3 inch","4 inch"], unit:"pcs"},
+    {name:"Teflon Tape", specs:["½ inch","¾ inch","1 inch"], unit:"roll"},
+    {name:"Flexible Hose", specs:["12 inch","18 inch","24 inch"], unit:"pcs"},
+    {name:"Water Pump", specs:["0.5 HP","1 HP","1.5 HP","2 HP"], unit:"pcs"},
+    {name:"Float Switch", specs:["Standard","Heavy duty"], unit:"pcs"}
+  ],
+  electrical: [
+    {name:"Copper Wire", specs:["0.75 sq mm","1 sq mm","1.5 sq mm","2.5 sq mm","4 sq mm","6 sq mm","10 sq mm"], unit:"metre"},
+    {name:"Flexible Wire", specs:["0.75 sq mm","1 sq mm","1.5 sq mm","2.5 sq mm","4 sq mm"], unit:"metre"},
+    {name:"PVC Conduit Pipe", specs:["16 mm","20 mm","25 mm","32 mm"], unit:"length"},
+    {name:"PVC Bend", specs:["16 mm","20 mm","25 mm","32 mm"], unit:"pcs"},
+    {name:"PVC Junction Box", specs:["2 way","3 way","4 way","Round"], unit:"pcs"},
+    {name:"Modular Switch", specs:["6 A","16 A","20 A","Bell push"], unit:"pcs"},
+    {name:"Socket", specs:["6 A","16 A","6/16 A combo"], unit:"pcs"},
+    {name:"Switch Plate", specs:["2 module","4 module","6 module","8 module","12 module"], unit:"pcs"},
+    {name:"MCB", specs:["6 A SP","10 A SP","16 A SP","20 A SP","25 A SP","32 A SP","40 A DP","63 A DP"], unit:"pcs"},
+    {name:"RCCB / ELCB", specs:["25 A","40 A","63 A","30 mA"], unit:"pcs"},
+    {name:"Distribution Board", specs:["4 way","6 way","8 way","12 way","SPN","TPN"], unit:"pcs"},
+    {name:"LED Bulb", specs:["5 W","9 W","12 W","15 W","18 W"], unit:"pcs"},
+    {name:"LED Panel Light", specs:["6 W","12 W","18 W","24 W"], unit:"pcs"},
+    {name:"Ceiling Fan", specs:["1200 mm","900 mm","BLDC"], unit:"pcs"},
+    {name:"Fan Regulator", specs:["Step type","Electronic"], unit:"pcs"},
+    {name:"Ceiling Rose", specs:["Standard"], unit:"pcs"},
+    {name:"Plug Top", specs:["6 A","16 A"], unit:"pcs"},
+    {name:"Electrical Tape", specs:["PVC tape","Insulation tape"], unit:"roll"},
+    {name:"Earthing Wire", specs:["1.5 sq mm","2.5 sq mm","4 sq mm","6 sq mm"], unit:"metre"},
+    {name:"Cable Tie", specs:["100 mm","150 mm","200 mm","300 mm"], unit:"pack"},
+    {name:"Lug", specs:["1.5 sq mm","2.5 sq mm","4 sq mm","6 sq mm","10 sq mm"], unit:"pcs"},
+    {name:"Main Switch", specs:["32 A DP","40 A DP","63 A DP"], unit:"pcs"},
+    {name:"Contactor", specs:["9 A","18 A","25 A","32 A"], unit:"pcs"}
+  ]
+};
+
+function refreshMaterialNames() {
+  const category=document.getElementById("materialCategory").value;
+  const select=document.getElementById("materialName");
+  select.innerHTML="";
+  materialCatalog[category].forEach((item,index)=>{
+    const option=document.createElement("option");
+    option.value=index; option.textContent=item.name; select.appendChild(option);
+  });
+  refreshMaterialSpecs();
+}
+function refreshMaterialSpecs() {
+  const category=document.getElementById("materialCategory").value;
+  const item=materialCatalog[category][Number(document.getElementById("materialName").value)||0];
+  const select=document.getElementById("materialSpec");
+  select.innerHTML="";
+  item.specs.forEach(spec=>{
+    const option=document.createElement("option");
+    option.value=spec; option.textContent=spec; select.appendChild(option);
+  });
+}
+function addSelectedMaterial() {
+  const category=document.getElementById("materialCategory").value;
+  const item=materialCatalog[category][Number(document.getElementById("materialName").value)||0];
+  const spec=document.getElementById("materialSpec").value;
+  const qty=Number(document.getElementById("materialQty").value);
+  const price=Number(document.getElementById("materialPrice").value);
+  const tax=Number(document.getElementById("materialTax").value);
+  if(!Number.isFinite(qty)||qty<=0){alert("Enter a quantity greater than zero.");return;}
+  if(!Number.isFinite(price)||price<0){alert("Enter a valid unit price.");return;}
+  addItem({desc:item.name,detail:[spec,item.unit].filter(Boolean).join(" • "),qty,price,tax});
+  document.getElementById("materialQty").value=1;
+  document.getElementById("materialPrice").value=0;
+}
+document.getElementById("materialCategory").addEventListener("change",refreshMaterialNames);
+document.getElementById("materialName").addEventListener("change",refreshMaterialSpecs);
+
+refreshMaterialNames();
+if (!document.getElementById("invoiceDate").value) {
+  const now = new Date();
+  document.getElementById("invoiceDate").value =
+    `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+}
+resetInvoice();
+</script>
+</body>
+</html>
